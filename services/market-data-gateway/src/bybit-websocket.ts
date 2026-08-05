@@ -93,7 +93,10 @@ export class BybitPublicWebSocketProvider implements PublicMarketDataProvider {
     try { msg = JSON.parse(raw); } catch { return; }
     const event = normalizeBybitWebSocketMessage(msg, this.tickerState, this.now());
     if (!event) return;
-    const key = event.type === 'ticker' ? `t:${event.symbol}:${event.sequence ?? event.eventTime}` : `c:${event.symbol}:${event.timeframe}:${event.openTime}:${event.close}`;
+    let key: string;
+    if (event.type === 'ticker') key = `t:${event.symbol}:${event.sequence ?? event.eventTime}`;
+    else if (event.type === 'candle') key = `c:${event.symbol}:${event.timeframe}:${event.openTime}:${event.closeTime}`;
+    else return;
     const now = this.now(); const previous = this.seen.get(key);
     if (previous && now - previous < 60_000) return;
     this.seen.set(key, now); this.lastEventAt = new Date(now).toISOString();
@@ -108,7 +111,11 @@ export function normalizeBybitWebSocketMessage(message: unknown, tickerState = n
     const data = Array.isArray(msg.data) ? msg.data[0] : msg.data;
     const symbol = data?.symbol ?? msg.topic.split('.')[1];
     const prev = tickerState.get(symbol) ?? {};
-    const next = { bid:data?.bid1Price ? Number(data.bid1Price) : prev.bid, ask:data?.ask1Price ? Number(data.ask1Price) : prev.ask, last:data?.lastPrice ? Number(data.lastPrice) : prev.last };
+    const next = {
+      ...(data?.bid1Price ? { bid: Number(data.bid1Price) } : prev.bid !== undefined ? { bid: prev.bid } : {}),
+      ...(data?.ask1Price ? { ask: Number(data.ask1Price) } : prev.ask !== undefined ? { ask: prev.ask } : {}),
+      ...(data?.lastPrice ? { last: Number(data.lastPrice) } : prev.last !== undefined ? { last: prev.last } : {}),
+    };
     if (!next.bid || !next.ask || !next.last) return null;
     tickerState.set(symbol, next);
     return { type:'ticker', provider:'bybit', symbol, eventTime:new Date(Number(msg.ts ?? receivedMs)).toISOString(), receivedTime:new Date(receivedMs).toISOString(), bid:next.bid, ask:next.ask, last:next.last, sequence:Number.isInteger(msg.cs) ? msg.cs : null } satisfies TickerEvent;
@@ -119,7 +126,7 @@ export function normalizeBybitWebSocketMessage(message: unknown, tickerState = n
     const [, interval, symbol] = msg.topic.split('.');
     const timeframe = BYBIT_TO_TF[interval] as CandleEvent['timeframe'] | undefined;
     if (!timeframe) return null;
-    return { type:'candle', provider:'bybit', symbol, timeframe, openTime:new Date(Number(data.start)).toISOString(), closeTime:new Date(Number(data.end) + 1).toISOString(), open:Number(data.open), high:Number(data.high), low:Number(data.low), close:Number(data.close), volume:Number(data.volume), closed:Boolean(data.confirm), receivedTime:new Date(receivedMs).toISOString() } satisfies CandleEvent;
+    return { type:'candle', provider:'bybit', symbol, timeframe, openTime:new Date(Number(data.start)).toISOString(), closeTime:new Date(Number(data.end)).toISOString(), open:Number(data.open), high:Number(data.high), low:Number(data.low), close:Number(data.close), volume:Number(data.volume), closed:Boolean(data.confirm), receivedTime:new Date(receivedMs).toISOString() } satisfies CandleEvent;
   }
   return null;
 }

@@ -23,12 +23,14 @@ function buildStatus(provider: PublicMarketDataProvider, config: GatewayConfig) 
 
 export function createProvider(config: GatewayConfig): PublicMarketDataProvider {
   if (config.providerMode === 'fixture') return new FixtureProvider();
-  if (config.providerMode === 'bybit-websocket') return new BybitPublicWebSocketProvider({
-    url: config.bybitWsUrl,
-    heartbeatMs: config.bybitWsHeartbeatMs,
-    reconnectBaseMs: config.bybitWsReconnectBaseMs,
-    reconnectMaxMs: config.bybitWsReconnectMaxMs,
-  });
+  if (config.providerMode === 'bybit-websocket') return new BybitPublicWebSocketProvider(
+    {
+      ...(config.bybitWsUrl !== undefined ? { url: config.bybitWsUrl } : {}),
+      ...(config.bybitWsHeartbeatMs !== undefined ? { heartbeatMs: config.bybitWsHeartbeatMs } : {}),
+      ...(config.bybitWsReconnectBaseMs !== undefined ? { reconnectBaseMs: config.bybitWsReconnectBaseMs } : {}),
+      ...(config.bybitWsReconnectMaxMs !== undefined ? { reconnectMaxMs: config.bybitWsReconnectMaxMs } : {}),
+    },
+  );
   return new DisabledProvider();
 }
 
