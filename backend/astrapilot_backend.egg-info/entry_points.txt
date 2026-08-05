@@ -1,0 +1,2 @@
+[console_scripts]
+astrapilot-db = app.db.cli:main
