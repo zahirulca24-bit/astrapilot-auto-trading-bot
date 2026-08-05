@@ -11,24 +11,21 @@ const config = {
   corsOrigins: ['http://localhost:5173'],
   providerMode: 'fixture' as const,
   staleAfterMs: 15000,
+  bybitRestBaseUrl: 'https://api.bybit.com',
+  bybitRestTimeoutMs: 5000,
+  bybitRestMaxRetries: 2,
+  bybitRestBackoffMs: 250,
+  bybitRestMinIntervalMs: 150,
+  bybitRestCacheTtlMs: 5000,
 };
 
 test('ticker contract accepts normalized public data', () => {
-  const result = tickerSchema.parse({
-    type: 'ticker', provider: 'fixture', symbol: 'BTCUSDT',
-    eventTime: '2026-08-05T08:00:00.000Z', receivedTime: '2026-08-05T08:00:00.100Z',
-    bid: 100, ask: 101, last: 100.5, sequence: 1,
-  });
+  const result = tickerSchema.parse({ type: 'ticker', provider: 'fixture', symbol: 'BTCUSDT', eventTime: '2026-08-05T08:00:00.000Z', receivedTime: '2026-08-05T08:00:00.100Z', bid: 100, ask: 101, last: 100.5, sequence: 1 });
   assert.equal(result.symbol, 'BTCUSDT');
 });
 
 test('candle contract preserves closed-candle state', () => {
-  const result = candleSchema.parse({
-    type: 'candle', provider: 'fixture', symbol: 'ETHUSDT', timeframe: '5m',
-    openTime: '2026-08-05T08:00:00.000Z', closeTime: '2026-08-05T08:05:00.000Z',
-    open: 100, high: 105, low: 99, close: 104, volume: 25, closed: true,
-    receivedTime: '2026-08-05T08:05:00.100Z',
-  });
+  const result = candleSchema.parse({ type: 'candle', provider: 'fixture', symbol: 'ETHUSDT', timeframe: '5m', openTime: '2026-08-05T08:00:00.000Z', closeTime: '2026-08-05T08:05:00.000Z', open: 100, high: 105, low: 99, close: 104, volume: 25, closed: true, receivedTime: '2026-08-05T08:05:00.100Z' });
   assert.equal(result.closed, true);
 });
 
