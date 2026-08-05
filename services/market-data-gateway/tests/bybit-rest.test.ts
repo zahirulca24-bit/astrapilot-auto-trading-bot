@@ -7,6 +7,7 @@ const config = {
   host: '127.0.0.1', port: 4100, corsOrigins: [], providerMode: 'bybit-rest' as const, staleAfterMs: 15000,
   bybitRestBaseUrl: 'https://api.bybit.test', bybitRestTimeoutMs: 1000, bybitRestMaxRetries: 0,
   bybitRestBackoffMs: 1, bybitRestMinIntervalMs: 50, bybitRestCacheTtlMs: 0,
+  persistenceTimeoutMs: 2000, persistenceMaxPending: 1000, persistenceMaxRetries: 2, persistenceBackoffMs: 100,
 };
 
 function response(result: unknown, status = 200): Response {

@@ -37,5 +37,5 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): GatewayConfig 
   return { nodeEnv:p.NODE_ENV, host:p.HOST, port:p.PORT, corsOrigins:p.CORS_ORIGINS.split(',').map(v=>v.trim()).filter(Boolean), providerMode:p.PROVIDER_MODE, staleAfterMs:p.STALE_AFTER_MS,
     bybitRestBaseUrl:p.BYBIT_REST_BASE_URL, bybitRestTimeoutMs:p.BYBIT_REST_TIMEOUT_MS, bybitRestMaxRetries:p.BYBIT_REST_MAX_RETRIES, bybitRestBackoffMs:p.BYBIT_REST_BACKOFF_MS, bybitRestMinIntervalMs:p.BYBIT_REST_MIN_INTERVAL_MS, bybitRestCacheTtlMs:p.BYBIT_REST_CACHE_TTL_MS,
     bybitWsUrl:p.BYBIT_WS_URL, bybitWsHeartbeatMs:p.BYBIT_WS_HEARTBEAT_MS, bybitWsReconnectBaseMs:p.BYBIT_WS_RECONNECT_BASE_MS, bybitWsReconnectMaxMs:p.BYBIT_WS_RECONNECT_MAX_MS,
-    persistenceBaseUrl:p.PERSISTENCE_BASE_URL, persistenceTimeoutMs:p.PERSISTENCE_TIMEOUT_MS, persistenceMaxPending:p.PERSISTENCE_MAX_PENDING, persistenceMaxRetries:p.PERSISTENCE_MAX_RETRIES, persistenceBackoffMs:p.PERSISTENCE_BACKOFF_MS };
+    ...(p.PERSISTENCE_BASE_URL !== undefined ? { persistenceBaseUrl:p.PERSISTENCE_BASE_URL } : {}), persistenceTimeoutMs:p.PERSISTENCE_TIMEOUT_MS, persistenceMaxPending:p.PERSISTENCE_MAX_PENDING, persistenceMaxRetries:p.PERSISTENCE_MAX_RETRIES, persistenceBackoffMs:p.PERSISTENCE_BACKOFF_MS };
 }
