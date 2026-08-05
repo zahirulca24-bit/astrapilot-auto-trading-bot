@@ -1,0 +1,133 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* AstraPilot design tokens */
+    --bg-app: #08111f;
+    --bg-panel: #0d1726;
+    --bg-surface: #111d2e;
+    --bg-elevated: #172437;
+    --bg-hover: #1d2c42;
+    --border-base: #26364d;
+
+    --text-primary: #f2f6fc;
+    --text-secondary: #b7c3d4;
+    --text-muted: #7f8da3;
+
+    --success: #35c48d;
+    --warning: #f4b740;
+    --critical: #f06464;
+    --simulation: #5ea6f7;
+    --ai-advisory: #b58cff;
+    --boundary-blocked: #f28e5b;
+
+    --radius: 0.5rem;
+
+    /* shadcn token mapping (kept for compatibility with existing ui primitives) */
+    --background: 213 39% 8%;
+    --foreground: 213 39% 96%;
+    --card: 213 34% 14%;
+    --card-foreground: 213 39% 96%;
+    --popover: 213 37% 11%;
+    --popover-foreground: 213 39% 96%;
+    --primary: 210 90% 67%;
+    --primary-foreground: 213 39% 8%;
+    --secondary: 213 28% 20%;
+    --secondary-foreground: 213 39% 96%;
+    --muted: 213 28% 20%;
+    --muted-foreground: 213 18% 56%;
+    --accent: 213 28% 24%;
+    --accent-foreground: 213 39% 96%;
+    --destructive: 0 84% 67%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 213 30% 22%;
+    --input: 213 30% 22%;
+    --ring: 210 90% 67%;
+    --chart-1: 210 90% 67%;
+    --chart-2: 160 55% 50%;
+    --chart-3: 30 85% 60%;
+    --chart-4: 265 60% 70%;
+    --chart-5: 340 75% 65%;
+  }
+}
+
+@layer base {
+  * {
+    border-color: var(--border-base);
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--bg-app);
+    color: var(--text-primary);
+    font-family: Inter, system-ui, -apple-system, sans-serif;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.5;
+  }
+
+  .font-mono {
+    font-family: 'JetBrains Mono', Consolas, ui-monospace, monospace;
+    font-feature-settings: 'zero', 'ss01';
+  }
+}
+
+@layer utilities {
+  .text-primary-app {
+    color: var(--text-primary);
+  }
+  .text-secondary-app {
+    color: var(--text-secondary);
+  }
+  .text-muted-app {
+    color: var(--text-muted);
+  }
+  .bg-app {
+    background-color: var(--bg-app);
+  }
+  .bg-panel {
+    background-color: var(--bg-panel);
+  }
+  .bg-surface {
+    background-color: var(--bg-surface);
+  }
+  .bg-elevated {
+    background-color: var(--bg-elevated);
+  }
+  .bg-hover-surface {
+    background-color: var(--bg-hover);
+  }
+  .border-app {
+    border-color: var(--border-base);
+  }
+
+  /* visible focus ring for keyboard navigation */
+  .focus-ring {
+    @apply outline-none ring-2 ring-[var(--simulation)] ring-offset-2 ring-offset-[var(--bg-app)];
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-base) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: var(--border-base);
+    border-radius: 3px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
