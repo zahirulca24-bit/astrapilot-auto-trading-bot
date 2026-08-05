@@ -2,26 +2,34 @@ import cors from '@fastify/cors';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { BybitRestClient, BybitRestError } from './bybit-rest.js';
+import { BybitPublicWebSocketProvider } from './bybit-websocket.js';
 import type { GatewayConfig } from './config.js';
 import { loadConfig } from './config.js';
 import { symbolSchema, timeframeSchema } from './contracts.js';
 import { DisabledProvider, FixtureProvider, type PublicMarketDataProvider } from './provider.js';
 
-const subscriptionSchema = z.object({ symbols: z.array(symbolSchema).min(1).max(100) });
+const subscriptionSchema = z.object({ symbols: z.array(symbolSchema).min(1).max(20) });
 const candleQuerySchema = z.object({ timeframe: timeframeSchema, limit: z.coerce.number().int().min(1).max(1000).default(200) });
 
 function buildStatus(provider: PublicMarketDataProvider, config: GatewayConfig) {
   const providerStatus = provider.status();
   const lastEventMs = providerStatus.lastEventAt ? Date.parse(providerStatus.lastEventAt) : null;
   const stale = lastEventMs !== null && Date.now() - lastEventMs > config.staleAfterMs;
-  return { service: 'astrapilot-market-data-gateway' as const, version: '0.2.0', ...providerStatus,
+  return { service: 'astrapilot-market-data-gateway' as const, version: '0.3.0', ...providerStatus,
     state: stale && providerStatus.state === 'connected' ? 'stale' as const : providerStatus.state,
     staleAfterMs: config.staleAfterMs,
     reason: stale ? 'Last normalized market event exceeded the stale threshold.' : providerStatus.reason };
 }
 
 export function createProvider(config: GatewayConfig): PublicMarketDataProvider {
-  return config.providerMode === 'fixture' ? new FixtureProvider() : new DisabledProvider();
+  if (config.providerMode === 'fixture') return new FixtureProvider();
+  if (config.providerMode === 'bybit-websocket') return new BybitPublicWebSocketProvider({
+    url: config.bybitWsUrl,
+    heartbeatMs: config.bybitWsHeartbeatMs,
+    reconnectBaseMs: config.bybitWsReconnectBaseMs,
+    reconnectMaxMs: config.bybitWsReconnectMaxMs,
+  });
+  return new DisabledProvider();
 }
 
 export async function buildApp(options?: { config?: GatewayConfig; provider?: PublicMarketDataProvider; restClient?: BybitRestClient }): Promise<FastifyInstance> {
@@ -51,7 +59,7 @@ export async function buildApp(options?: { config?: GatewayConfig; provider?: Pu
     return reply.code(ready ? 200 : 503).send({ ready, status, rest: config.providerMode === 'bybit-rest' });
   });
   app.get('/status', async () => ({ ...buildStatus(provider, config), restProvider: config.providerMode === 'bybit-rest' ? 'bybit' : null }));
-  app.get('/contracts', async () => ({ version: '1.1.0', eventTypes: ['ticker', 'candle', 'trade'], timeframes: ['1m', '3m', '5m', '15m', '30m', '1h', '4h', '1d'], transport: { rest: true, sse: false, websocket: false }, boundary: { publicDataOnly: true, exchangeCredentialsAccepted: false, orderExecution: false } }));
+  app.get('/contracts', async () => ({ version: '1.2.0', eventTypes: ['ticker', 'candle'], timeframes: ['1m', '3m', '5m', '15m', '30m', '1h', '4h', '1d'], transport: { rest: true, sse: false, websocket: true }, boundary: { publicDataOnly: true, exchangeCredentialsAccepted: false, orderExecution: false } }));
 
   app.get('/market-data/universe', async () => ({ provider: 'bybit', market: 'linear-usdt-perpetual', limit: 20, symbols: await restClient.topSymbols(20) }));
   app.get('/market-data/ticker/:symbol', async (request) => restClient.ticker(symbolSchema.parse((request.params as { symbol: string }).symbol.toUpperCase())));
