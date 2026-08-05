@@ -49,13 +49,32 @@ def test_queue_rejects_when_capacity_is_exhausted() -> None:
     assert metrics.failed == 0
 
 
-def test_queue_isolates_failed_write() -> None:
-    queue = PersistenceWriteQueue(max_pending=2, workers=1)
+def test_queue_retries_transient_failure_then_completes() -> None:
+    queue = PersistenceWriteQueue(max_pending=1, workers=1, max_retries=2, backoff_seconds=0)
+    attempts = 0
+
+    def transient() -> None:
+        nonlocal attempts
+        attempts += 1
+        if attempts < 3:
+            raise RuntimeError("temporary database outage")
+
+    assert queue.submit(transient) is True
+    metrics = queue.close(wait=True)
+    assert attempts == 3
+    assert metrics.retried == 2
+    assert metrics.completed == 1
+    assert metrics.failed == 0
+
+
+def test_queue_isolates_failed_write_after_retry_budget() -> None:
+    queue = PersistenceWriteQueue(max_pending=2, workers=1, max_retries=1, backoff_seconds=0)
 
     def fail() -> None:
         raise RuntimeError("database unavailable")
 
     assert queue.submit(fail) is True
     metrics = queue.close(wait=True)
+    assert metrics.retried == 1
     assert metrics.failed == 1
     assert metrics.in_flight == 0
