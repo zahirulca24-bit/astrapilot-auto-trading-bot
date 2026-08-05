@@ -53,6 +53,7 @@ test('classifies completed candle and sorts ascending', async () => {
   ] });
   const candles = await new BybitRestClient(config, fetchMock).candles('BTCUSDT', '5m', 2);
   assert.equal(candles.length, 2);
+  assert.ok(candles[0] !== undefined && candles[1] !== undefined);
   assert.equal(candles[0].closed, true);
   assert.ok(Date.parse(candles[0].openTime) < Date.parse(candles[1].openTime));
 });
