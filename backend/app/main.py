@@ -7,12 +7,26 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes.health import router as health_router
 from app.core.config import get_settings
 from app.core.middleware import RequestIdMiddleware
+from app.db.manager import DatabaseManager
 
 
 @asynccontextmanager
-async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    # Phase 1 intentionally starts no database, market-data, exchange, or trading client.
-    yield
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    settings = get_settings()
+    database_manager = DatabaseManager(settings)
+    app.state.database_manager = database_manager
+    app.state.database_startup_error = None
+
+    if settings.database_url is not None:
+        try:
+            database_manager.open()
+        except Exception as exc:  # startup boundary must not leak credentials
+            app.state.database_startup_error = type(exc).__name__
+
+    try:
+        yield
+    finally:
+        database_manager.close()
 
 
 def create_app() -> FastAPI:
