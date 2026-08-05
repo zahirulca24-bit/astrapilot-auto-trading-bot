@@ -1,7 +1,7 @@
 from pathlib import Path
 
 
-MIGRATION = Path(__file__).parents[1] / "migrations" / "002_market_data_schema.sql"
+MIGRATION = Path(__file__).parents[1] / "app" / "db" / "migrations" / "0002_market_data_schema.sql"
 
 
 def test_market_data_schema_contains_required_tables() -> None:

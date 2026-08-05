@@ -1,12 +1,14 @@
 from datetime import UTC, datetime
 
 from app.core.config import Settings
+from app.db.manager import DatabaseManager
 from app.schemas.health import DependencyHealth, HealthState
 
 
 class HealthService:
-    def __init__(self, settings: Settings) -> None:
+    def __init__(self, settings: Settings, db_manager: DatabaseManager | None = None) -> None:
         self.settings = settings
+        self._db_manager = db_manager
 
     @staticmethod
     def now() -> datetime:
@@ -16,16 +18,35 @@ class HealthService:
         return "offline_research" if self.settings.offline_research_mode else "unsupported"
 
     def dependency_checks(self) -> dict[str, DependencyHealth]:
-        return {
-            "database": DependencyHealth(
+        if self._db_manager is not None:
+            db_status = self._db_manager.status()
+            if not db_status.configured:
+                db_state = HealthState.NOT_CONFIGURED if db_status.required else HealthState.DISABLED
+                db_detail = "DATABASE_URL is not configured."
+            elif db_status.ready:
+                db_state = HealthState.OK
+                db_detail = f"Database ready; migration version {db_status.migration_version}."
+            else:
+                db_state = HealthState.UNAVAILABLE
+                db_detail = db_status.reason or "Database is not reachable."
+            database_health = DependencyHealth(
+                state=db_state,
+                required=db_status.required,
+                detail=db_detail,
+            )
+        else:
+            database_health = DependencyHealth(
                 state=HealthState.NOT_CONFIGURED if self.settings.database_required else HealthState.DISABLED,
                 required=self.settings.database_required,
                 detail=(
-                    "Database contract is required but not configured in Phase 1."
+                    "Database contract is required but not configured."
                     if self.settings.database_required
                     else "Database integration is deferred; no connection attempted."
                 ),
-            ),
+            )
+
+        return {
+            "database": database_health,
             "market_data_gateway": DependencyHealth(
                 state=(HealthState.NOT_CONFIGURED if self.settings.market_data_gateway_enabled else HealthState.DISABLED),
                 required=False,

@@ -6,7 +6,7 @@ AstraPilot is a greenfield crypto trading research and local paper-trading platf
 
 ## Current project status
 
-**Last updated:** 06 August 2026, 01:10 AM (Asia/Dhaka)
+**Last updated:** 06 August 2026, 21:18 UTC (Issue #10 checkpoint audit)
 
 | Area | Status |
 | --- | --- |
@@ -14,7 +14,9 @@ AstraPilot is a greenfield crypto trading research and local paper-trading platf
 | Backend Phase 1 — Foundation + Health Contract | Merged |
 | Backend Phase 2 — Public Market Data Gateway Contract | Merged |
 | Backend Phase 3 — Real Public Market Data Adapter | Complete and merged |
-| Phase 4 — Neon PostgreSQL Persistence | Planned; coding not yet approved |
+| Phase 4.1 — Neon PostgreSQL Database Foundation | Complete (migration applied) |
+| Phase 4.2 — Market-Data Schema | Complete (schema in canonical migration path) |
+| Phase 4.3 — Gateway Persistence Wiring | Complete (queue + retry wired) |
 | Python Trading Engines | Not started |
 | Live / Demo / Testnet Trading | Not authorized |
 

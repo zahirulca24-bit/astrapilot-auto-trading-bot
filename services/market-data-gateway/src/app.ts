@@ -7,6 +7,8 @@ import type { GatewayConfig } from './config.js';
 import { loadConfig } from './config.js';
 import { symbolSchema, timeframeSchema } from './contracts.js';
 import { recoveryLimit, type ReliabilityMetrics } from './feed-reliability.js';
+import type { PersistenceRepository } from './persistence-queue.js';
+import { PersistenceWriteQueue } from './persistence-queue.js';
 import { DisabledProvider, FixtureProvider, type PublicMarketDataProvider } from './provider.js';
 
 const subscriptionSchema = z.object({ symbols: z.array(symbolSchema).min(1).max(20) });
@@ -42,10 +44,13 @@ export function createProvider(config: GatewayConfig): PublicMarketDataProvider 
   return new DisabledProvider();
 }
 
-export async function buildApp(options?: { config?: GatewayConfig; provider?: PublicMarketDataProvider; restClient?: BybitRestClient }): Promise<FastifyInstance> {
+export async function buildApp(options?: { config?: GatewayConfig; provider?: PublicMarketDataProvider; restClient?: BybitRestClient; persistenceRepo?: PersistenceRepository }): Promise<FastifyInstance> {
   const config = options?.config ?? loadConfig();
   const provider = options?.provider ?? createProvider(config);
   const restClient = options?.restClient ?? new BybitRestClient(config);
+  const persistenceQueue = options?.persistenceRepo
+    ? new PersistenceWriteQueue(options.persistenceRepo)
+    : null;
   const app = Fastify({ logger: false, requestIdHeader: 'x-request-id' });
 
   await app.register(cors, { origin: (origin, callback) => {
@@ -59,7 +64,7 @@ export async function buildApp(options?: { config?: GatewayConfig; provider?: Pu
     return reply.code(500).send({ error: 'internal_error' });
   });
 
-  app.addHook('onReady', async () => { await provider.start(async () => undefined); });
+  app.addHook('onReady', async () => { await provider.start(async (event) => { if (persistenceQueue) persistenceQueue.enqueue(event); }); });
   app.addHook('onClose', async () => { await provider.stop(); });
 
   app.get('/health/live', async () => ({ status: 'ok', service: 'astrapilot-market-data-gateway' }));
@@ -75,6 +80,8 @@ export async function buildApp(options?: { config?: GatewayConfig; provider?: Pu
     status: buildStatus(provider, config),
   }));
   app.get('/contracts', async () => ({ version: '1.3.0', eventTypes: ['ticker', 'candle'], timeframes: ['1m', '3m', '5m', '15m', '30m', '1h', '4h', '1d'], transport: { rest: true, sse: false, websocket: true }, recovery: { restCandleBackfill: true, maxCandles: 1000 }, boundary: { publicDataOnly: true, exchangeCredentialsAccepted: false, orderExecution: false } }));
+
+  app.get('/persistence/metrics', async () => persistenceQueue ? persistenceQueue.metrics() : { submitted: 0, completed: 0, failed: 0, rejected: 0, pending: 0 });
 
   app.get('/market-data/universe', async () => ({ provider: 'bybit', market: 'linear-usdt-perpetual', limit: 20, symbols: await restClient.topSymbols(20) }));
   app.get('/market-data/ticker/:symbol', async (request) => restClient.ticker(symbolSchema.parse((request.params as { symbol: string }).symbol.toUpperCase())));

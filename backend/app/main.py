@@ -7,12 +7,26 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes.health import router as health_router
 from app.core.config import get_settings
 from app.core.middleware import RequestIdMiddleware
+from app.db.manager import DatabaseManager
 
 
 @asynccontextmanager
-async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    # Phase 1 intentionally starts no database, market-data, exchange, or trading client.
-    yield
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    settings = get_settings()
+    # Allow tests to pre-inject a mock db_manager before lifespan starts
+    existing = getattr(app.state, "db_manager", None)
+    if existing is None:
+        db_manager = DatabaseManager(settings)
+        db_manager.open()
+        app.state.db_manager = db_manager
+    else:
+        db_manager = None
+    try:
+        yield
+    finally:
+        if db_manager is not None:
+            db_manager.close()
+            app.state.db_manager = None
 
 
 def create_app() -> FastAPI:
