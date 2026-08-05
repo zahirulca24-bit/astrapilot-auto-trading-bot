@@ -20,42 +20,15 @@ const schema = z.object({
 });
 
 export type GatewayConfig = {
-  nodeEnv: 'development' | 'test' | 'production';
-  host: string;
-  port: number;
-  corsOrigins: string[];
-  providerMode: 'disabled' | 'fixture' | 'bybit-rest' | 'bybit-websocket';
-  staleAfterMs: number;
-  bybitRestBaseUrl: string;
-  bybitRestTimeoutMs: number;
-  bybitRestMaxRetries: number;
-  bybitRestBackoffMs: number;
-  bybitRestMinIntervalMs: number;
-  bybitRestCacheTtlMs: number;
-  bybitWsUrl: string;
-  bybitWsHeartbeatMs: number;
-  bybitWsReconnectBaseMs: number;
-  bybitWsReconnectMaxMs: number;
+  nodeEnv: 'development' | 'test' | 'production'; host: string; port: number; corsOrigins: string[];
+  providerMode: 'disabled' | 'fixture' | 'bybit-rest' | 'bybit-websocket'; staleAfterMs: number;
+  bybitRestBaseUrl: string; bybitRestTimeoutMs: number; bybitRestMaxRetries: number; bybitRestBackoffMs: number; bybitRestMinIntervalMs: number; bybitRestCacheTtlMs: number;
+  bybitWsUrl?: string; bybitWsHeartbeatMs?: number; bybitWsReconnectBaseMs?: number; bybitWsReconnectMaxMs?: number;
 };
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): GatewayConfig {
-  const parsed = schema.parse(env);
-  return {
-    nodeEnv: parsed.NODE_ENV,
-    host: parsed.HOST,
-    port: parsed.PORT,
-    corsOrigins: parsed.CORS_ORIGINS.split(',').map((value) => value.trim()).filter(Boolean),
-    providerMode: parsed.PROVIDER_MODE,
-    staleAfterMs: parsed.STALE_AFTER_MS,
-    bybitRestBaseUrl: parsed.BYBIT_REST_BASE_URL,
-    bybitRestTimeoutMs: parsed.BYBIT_REST_TIMEOUT_MS,
-    bybitRestMaxRetries: parsed.BYBIT_REST_MAX_RETRIES,
-    bybitRestBackoffMs: parsed.BYBIT_REST_BACKOFF_MS,
-    bybitRestMinIntervalMs: parsed.BYBIT_REST_MIN_INTERVAL_MS,
-    bybitRestCacheTtlMs: parsed.BYBIT_REST_CACHE_TTL_MS,
-    bybitWsUrl: parsed.BYBIT_WS_URL,
-    bybitWsHeartbeatMs: parsed.BYBIT_WS_HEARTBEAT_MS,
-    bybitWsReconnectBaseMs: parsed.BYBIT_WS_RECONNECT_BASE_MS,
-    bybitWsReconnectMaxMs: parsed.BYBIT_WS_RECONNECT_MAX_MS,
-  };
+  const p = schema.parse(env);
+  return { nodeEnv:p.NODE_ENV, host:p.HOST, port:p.PORT, corsOrigins:p.CORS_ORIGINS.split(',').map(v=>v.trim()).filter(Boolean), providerMode:p.PROVIDER_MODE, staleAfterMs:p.STALE_AFTER_MS,
+    bybitRestBaseUrl:p.BYBIT_REST_BASE_URL, bybitRestTimeoutMs:p.BYBIT_REST_TIMEOUT_MS, bybitRestMaxRetries:p.BYBIT_REST_MAX_RETRIES, bybitRestBackoffMs:p.BYBIT_REST_BACKOFF_MS, bybitRestMinIntervalMs:p.BYBIT_REST_MIN_INTERVAL_MS, bybitRestCacheTtlMs:p.BYBIT_REST_CACHE_TTL_MS,
+    bybitWsUrl:p.BYBIT_WS_URL, bybitWsHeartbeatMs:p.BYBIT_WS_HEARTBEAT_MS, bybitWsReconnectBaseMs:p.BYBIT_WS_RECONNECT_BASE_MS, bybitWsReconnectMaxMs:p.BYBIT_WS_RECONNECT_MAX_MS };
 }
