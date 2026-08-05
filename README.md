@@ -6,14 +6,85 @@ AstraPilot is a greenfield crypto trading research and local paper-trading platf
 
 ## Current project status
 
+**Last updated:** 06 August 2026, 01:10 AM (Asia/Dhaka)
+
 | Area | Status |
 | --- | --- |
 | Frontend Foundation | Complete |
 | Backend Phase 1 — Foundation + Health Contract | Merged |
 | Backend Phase 2 — Public Market Data Gateway Contract | Merged |
-| Backend Phase 3 — Real Public Market Data Adapter | Planning only |
+| Backend Phase 3 — Real Public Market Data Adapter | Complete and merged |
+| Phase 4 — Neon PostgreSQL Persistence | Planned; coding not yet approved |
 | Python Trading Engines | Not started |
 | Live / Demo / Testnet Trading | Not authorized |
+
+## Phase 3 completion record
+
+Phase 3 was completed through three separately approved pull requests.
+
+### PR 3.1 — Bybit Public REST Adapter
+
+Status: **Merged**
+
+Delivered:
+
+- Bybit V5 public REST client
+- Active linear USDT perpetual filtering
+- Dynamic Top-20 universe by 24-hour turnover
+- Stablecoin-base and inactive-contract exclusion
+- Public ticker normalization
+- Historical OHLCV normalization
+- Closed/open candle classification
+- Request spacing, timeout, retry, backoff and jitter
+- Short-lived response cache
+- Structured provider errors
+- REST contract tests
+
+### PR 3.2 — Bybit Public WebSocket Adapter
+
+Status: **Merged**
+
+Delivered:
+
+- Bybit public linear WebSocket connection
+- Dynamic Top-20 ticker and candle subscriptions
+- Supported timeframes: 1m, 3m, 5m, 15m, 30m, 1h, 4h and 1d
+- Heartbeat support
+- Exponential reconnect backoff with jitter
+- Automatic re-subscription after reconnect
+- Ticker snapshot/delta merging
+- Closed-candle mapping
+- Duplicate-event suppression
+- Feed status and last-event tracking
+- WebSocket normalization tests
+
+### PR 3.3 — Feed Reliability and REST Recovery
+
+Status: **Merged**
+
+Delivered:
+
+- WebSocket stale-feed detection
+- Bounded duplicate-event suppression
+- Out-of-order ticker sequence rejection
+- Out-of-order candle rejection by symbol/timeframe
+- Reconnect metrics and disconnect timestamps
+- Circuit breaker with closed, open and half-open states
+- Cooldown-aware reconnect handling
+- Top-20 subscription restore verification
+- Public REST candle gap recovery
+- Recovery calculation with a 1,000-candle safety limit
+- Reliability status endpoint
+- Reliability and recovery tests
+
+### Phase 3 completion timestamp
+
+```text
+Date: 06 August 2026
+Time: 01:10 AM
+Time Zone: Asia/Dhaka (UTC+06:00)
+Status: PHASE 3 COMPLETE AND MERGED
+```
 
 ## Architecture boundary
 
@@ -29,6 +100,8 @@ Used only for the public market-data collection gateway:
 - Rate-limit and timeout handling
 - Feed normalization
 - Stale-feed and sequence-gap detection
+- REST gap recovery
+- Circuit breaker and reliability metrics
 - Gateway health and status
 
 Node.js is not allowed to own trading decisions, strategy logic, risk logic, portfolio accounting, or order execution.
@@ -49,76 +122,54 @@ Used for all core analytical and trading engines:
 
 The Python backend remains the authority for business logic and trading decisions.
 
-## Phase 3 — Real Public Market Data Adapter
+## Existing backend endpoints
 
-Phase 3 is divided into three separately approved pull requests.
+### FastAPI backend
 
-### PR 3.1 — Public REST Adapter
+```text
+GET /health/live
+GET /health/ready
+GET /health
+```
 
-Planned scope:
+### Market-data gateway
 
-- Public exchange REST client
-- Symbol metadata
-- Ticker snapshots
-- Historical candle retrieval
-- Timeout and retry policy
-- Rate-limit handling
-- Contract normalization
-- REST contract tests
+```text
+GET    /health/live
+GET    /health/ready
+GET    /status
+GET    /contracts
+GET    /reliability
+GET    /market-data/universe
+GET    /market-data/ticker/:symbol
+GET    /market-data/candles/:symbol
+GET    /market-data/recovery/:symbol
+POST   /subscriptions
+DELETE /subscriptions
+```
 
-Not included:
+## Phase 4 — Neon PostgreSQL Persistence
 
-- WebSocket streaming
-- Persistence
-- Trading logic
-- Private exchange endpoints
+Planned sequence:
 
-### PR 3.2 — Public WebSocket Adapter
+1. PR 4.1 — Database Foundation
+2. PR 4.2 — Market Data Schema
+3. PR 4.3 — Persistence Pipeline
+4. PR 4.4 — Recovery and Verification
 
-Planned scope:
+Neon rules:
 
-- Public WebSocket connection
-- Ticker stream
-- Candle stream
-- Trade stream
-- Subscribe and unsubscribe controls
-- Heartbeat
-- Reconnect with backoff
-- Duplicate-event protection
-- Stream contract tests
+- SSL-required connection
+- Connection string stored only in local `.env` and approved GitHub Secrets
+- No database credentials committed to the repository
+- Frontend never connects directly to Neon
+- Validated normalized events only
+- Idempotent candle upserts
+- Unique candle key: symbol + timeframe + open time
 
-Not included:
-
-- Order execution
-- Private channels
-- API credentials
-- Portfolio or risk logic
-
-### PR 3.3 — Feed Reliability and Gateway Integration
-
-Planned scope:
-
-- REST and WebSocket integration
-- Sequence-gap detection
-- Stale-feed detection
-- REST recovery after WebSocket gaps
-- Provider and connection health
-- Controlled shutdown
-- End-to-end gateway tests
-- Backend readiness integration
-
-Not included:
-
-- Historical persistence
-- Scanner
-- Signal generation
-- Risk engine
-- Paper trading
-- Live, demo, or testnet order execution
+Phase 4 coding requires separate owner approval.
 
 ## Approval and delivery workflow
-
-Every new phase or engine follows this sequence:
 
 ```text
 Plan
@@ -152,7 +203,9 @@ Currently allowed:
 - Public market data without credentials
 - Local research
 - Backtesting
-- Local paper-trading simulation after its future approval
+- Local paper-trading simulation after future approval
+- Local application testing
+- Neon PostgreSQL use after Phase 4 approval
 
 Currently prohibited:
 
@@ -164,18 +217,19 @@ Currently prohibited:
 - Deposits, withdrawals, or transfers
 - Browser-to-exchange connections
 - Live-funds controls
+- Cloud application deployment until separately approved
 
 ## Repository structure
 
 ```text
 backend/
-  app/                         # FastAPI application and health contracts
-  tests/                       # Python backend tests
+  app/
+  tests/
 
 services/
-  market-data-gateway/         # Node.js/TypeScript public data gateway
+  market-data-gateway/
 
-src/                           # React frontend
+src/
   adapters/
   components/
   hooks/
@@ -185,44 +239,6 @@ src/                           # React frontend
   services/
   types/
 ```
-
-## Existing backend endpoints
-
-### FastAPI backend
-
-```text
-GET /health/live
-GET /health/ready
-GET /health
-```
-
-### Market-data gateway contract
-
-```text
-GET    /health/live
-GET    /health/ready
-GET    /status
-GET    /contracts
-POST   /subscriptions
-DELETE /subscriptions
-```
-
-## Frontend status
-
-The frontend foundation includes:
-
-- Responsive application shell
-- Desktop and mobile navigation
-- Dashboard V1
-- Four KPI cards
-- Equity and drawdown chart
-- Recent signals table
-- Required actions panel
-- Approved route table
-- Placeholder pages for deferred modules
-- Local demo adapter isolated from UI components
-
-The current frontend remains a presentation and navigation layer only.
 
 ## Development commands
 
@@ -257,6 +273,6 @@ npm run build
 
 ## Current stop condition
 
-Backend Phase 2 is merged. Phase 3 has not started.
+Phase 3 is complete and merged.
 
-The next authorized action is discussion and approval of **PR 3.1 — Public REST Adapter**. No Phase 3 coding may begin before owner approval.
+The next proposed action is **Phase 4.1 — Neon PostgreSQL Database Foundation**, subject to separate owner review and coding approval.
