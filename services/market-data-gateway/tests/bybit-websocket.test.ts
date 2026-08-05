@@ -34,7 +34,7 @@ test('normalizes closed Bybit candle', () => {
   if (event?.type !== 'candle') return;
   assert.equal(event.timeframe, '15m');
   assert.equal(event.closed, true);
-  assert.equal(event.closeTime, '2024-07-03T09:35:00.000Z');
+  assert.equal(event.closeTime, new Date(1_720_000_899_999).toISOString());
 });
 
 test('ignores unsupported messages', () => {
