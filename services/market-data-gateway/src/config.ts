@@ -17,6 +17,11 @@ const schema = z.object({
   BYBIT_WS_HEARTBEAT_MS: z.coerce.number().int().min(5000).max(60000).default(20000),
   BYBIT_WS_RECONNECT_BASE_MS: z.coerce.number().int().min(100).max(10000).default(500),
   BYBIT_WS_RECONNECT_MAX_MS: z.coerce.number().int().min(1000).max(120000).default(30000),
+  PERSISTENCE_BASE_URL: z.string().url().optional(),
+  PERSISTENCE_TIMEOUT_MS: z.coerce.number().int().min(100).max(30000).default(2000),
+  PERSISTENCE_MAX_PENDING: z.coerce.number().int().min(1).max(100000).default(1000),
+  PERSISTENCE_MAX_RETRIES: z.coerce.number().int().min(0).max(10).default(2),
+  PERSISTENCE_BACKOFF_MS: z.coerce.number().int().min(0).max(30000).default(100),
 });
 
 export type GatewayConfig = {
@@ -24,11 +29,13 @@ export type GatewayConfig = {
   providerMode: 'disabled' | 'fixture' | 'bybit-rest' | 'bybit-websocket'; staleAfterMs: number;
   bybitRestBaseUrl: string; bybitRestTimeoutMs: number; bybitRestMaxRetries: number; bybitRestBackoffMs: number; bybitRestMinIntervalMs: number; bybitRestCacheTtlMs: number;
   bybitWsUrl?: string; bybitWsHeartbeatMs?: number; bybitWsReconnectBaseMs?: number; bybitWsReconnectMaxMs?: number;
+  persistenceBaseUrl?: string; persistenceTimeoutMs: number; persistenceMaxPending: number; persistenceMaxRetries: number; persistenceBackoffMs: number;
 };
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): GatewayConfig {
   const p = schema.parse(env);
   return { nodeEnv:p.NODE_ENV, host:p.HOST, port:p.PORT, corsOrigins:p.CORS_ORIGINS.split(',').map(v=>v.trim()).filter(Boolean), providerMode:p.PROVIDER_MODE, staleAfterMs:p.STALE_AFTER_MS,
     bybitRestBaseUrl:p.BYBIT_REST_BASE_URL, bybitRestTimeoutMs:p.BYBIT_REST_TIMEOUT_MS, bybitRestMaxRetries:p.BYBIT_REST_MAX_RETRIES, bybitRestBackoffMs:p.BYBIT_REST_BACKOFF_MS, bybitRestMinIntervalMs:p.BYBIT_REST_MIN_INTERVAL_MS, bybitRestCacheTtlMs:p.BYBIT_REST_CACHE_TTL_MS,
-    bybitWsUrl:p.BYBIT_WS_URL, bybitWsHeartbeatMs:p.BYBIT_WS_HEARTBEAT_MS, bybitWsReconnectBaseMs:p.BYBIT_WS_RECONNECT_BASE_MS, bybitWsReconnectMaxMs:p.BYBIT_WS_RECONNECT_MAX_MS };
+    bybitWsUrl:p.BYBIT_WS_URL, bybitWsHeartbeatMs:p.BYBIT_WS_HEARTBEAT_MS, bybitWsReconnectBaseMs:p.BYBIT_WS_RECONNECT_BASE_MS, bybitWsReconnectMaxMs:p.BYBIT_WS_RECONNECT_MAX_MS,
+    ...(p.PERSISTENCE_BASE_URL !== undefined ? { persistenceBaseUrl:p.PERSISTENCE_BASE_URL } : {}), persistenceTimeoutMs:p.PERSISTENCE_TIMEOUT_MS, persistenceMaxPending:p.PERSISTENCE_MAX_PENDING, persistenceMaxRetries:p.PERSISTENCE_MAX_RETRIES, persistenceBackoffMs:p.PERSISTENCE_BACKOFF_MS };
 }

@@ -7,6 +7,7 @@ import type { GatewayConfig } from './config.js';
 import { loadConfig } from './config.js';
 import { symbolSchema, timeframeSchema } from './contracts.js';
 import { recoveryLimit, type ReliabilityMetrics } from './feed-reliability.js';
+import { PersistenceSink } from './persistence-sink.js';
 import { DisabledProvider, FixtureProvider, type PublicMarketDataProvider } from './provider.js';
 
 const subscriptionSchema = z.object({ symbols: z.array(symbolSchema).min(1).max(20) });
@@ -42,10 +43,11 @@ export function createProvider(config: GatewayConfig): PublicMarketDataProvider 
   return new DisabledProvider();
 }
 
-export async function buildApp(options?: { config?: GatewayConfig; provider?: PublicMarketDataProvider; restClient?: BybitRestClient }): Promise<FastifyInstance> {
+export async function buildApp(options?: { config?: GatewayConfig; provider?: PublicMarketDataProvider; restClient?: BybitRestClient; persistenceSink?: PersistenceSink }): Promise<FastifyInstance> {
   const config = options?.config ?? loadConfig();
   const provider = options?.provider ?? createProvider(config);
   const restClient = options?.restClient ?? new BybitRestClient(config);
+  const persistenceSink = options?.persistenceSink ?? new PersistenceSink(config);
   const app = Fastify({ logger: false, requestIdHeader: 'x-request-id' });
 
   await app.register(cors, { origin: (origin, callback) => {
@@ -59,29 +61,36 @@ export async function buildApp(options?: { config?: GatewayConfig; provider?: Pu
     return reply.code(500).send({ error: 'internal_error' });
   });
 
-  app.addHook('onReady', async () => { await provider.start(async () => undefined); });
-  app.addHook('onClose', async () => { await provider.stop(); });
+  app.addHook('onReady', async () => { await provider.start(async (event) => { persistenceSink.submit(event); }); });
+  app.addHook('onClose', async () => { await provider.stop(); await persistenceSink.close(); });
 
   app.get('/health/live', async () => ({ status: 'ok', service: 'astrapilot-market-data-gateway' }));
   app.get('/health/ready', async (_request, reply) => {
     const status = buildStatus(provider, config);
     const ready = status.state === 'connected' || status.state === 'degraded' || config.providerMode === 'bybit-rest';
-    return reply.code(ready ? 200 : 503).send({ ready, status, rest: config.providerMode === 'bybit-rest' });
+    return reply.code(ready ? 200 : 503).send({ ready, status, rest: config.providerMode === 'bybit-rest', persistence: { enabled: persistenceSink.enabled, metrics: persistenceSink.metrics() } });
   });
-  app.get('/status', async () => ({ ...buildStatus(provider, config), restProvider: config.providerMode === 'bybit-rest' ? 'bybit' : null }));
+  app.get('/status', async () => ({ ...buildStatus(provider, config), restProvider: config.providerMode === 'bybit-rest' ? 'bybit' : null, persistence: { enabled: persistenceSink.enabled, metrics: persistenceSink.metrics() } }));
   app.get('/reliability', async () => ({
     supported: hasReliability(provider),
     metrics: hasReliability(provider) ? provider.reliability() : null,
+    persistence: persistenceSink.metrics(),
     status: buildStatus(provider, config),
   }));
-  app.get('/contracts', async () => ({ version: '1.3.0', eventTypes: ['ticker', 'candle'], timeframes: ['1m', '3m', '5m', '15m', '30m', '1h', '4h', '1d'], transport: { rest: true, sse: false, websocket: true }, recovery: { restCandleBackfill: true, maxCandles: 1000 }, boundary: { publicDataOnly: true, exchangeCredentialsAccepted: false, orderExecution: false } }));
+  app.get('/contracts', async () => ({ version: '1.4.0', eventTypes: ['ticker', 'candle'], timeframes: ['1m', '3m', '5m', '15m', '30m', '1h', '4h', '1d'], transport: { rest: true, sse: false, websocket: true }, recovery: { restCandleBackfill: true, maxCandles: 1000 }, persistence: { optional: true, closedCandlesOnly: true, bounded: true }, boundary: { publicDataOnly: true, exchangeCredentialsAccepted: false, orderExecution: false } }));
 
   app.get('/market-data/universe', async () => ({ provider: 'bybit', market: 'linear-usdt-perpetual', limit: 20, symbols: await restClient.topSymbols(20) }));
-  app.get('/market-data/ticker/:symbol', async (request) => restClient.ticker(symbolSchema.parse((request.params as { symbol: string }).symbol.toUpperCase())));
+  app.get('/market-data/ticker/:symbol', async (request) => {
+    const ticker = await restClient.ticker(symbolSchema.parse((request.params as { symbol: string }).symbol.toUpperCase()));
+    persistenceSink.submit(ticker);
+    return ticker;
+  });
   app.get('/market-data/candles/:symbol', async (request) => {
     const symbol = symbolSchema.parse((request.params as { symbol: string }).symbol.toUpperCase());
     const query = candleQuerySchema.parse(request.query);
-    return { provider: 'bybit', symbol, timeframe: query.timeframe, candles: await restClient.candles(symbol, query.timeframe, query.limit) };
+    const candles = await restClient.candles(symbol, query.timeframe, query.limit);
+    candles.filter((candle) => candle.closed).forEach((candle) => { persistenceSink.submit(candle); });
+    return { provider: 'bybit', symbol, timeframe: query.timeframe, candles };
   });
   app.get('/market-data/recovery/:symbol', async (request) => {
     const symbol = symbolSchema.parse((request.params as { symbol: string }).symbol.toUpperCase());
@@ -89,13 +98,15 @@ export async function buildApp(options?: { config?: GatewayConfig; provider?: Pu
     const limit = recoveryLimit(query.timeframe, query.lastOpenTime);
     const candles = await restClient.candles(symbol, query.timeframe, limit);
     const lastOpenMs = Date.parse(query.lastOpenTime);
+    const recovered = candles.filter((candle) => candle.closed && Date.parse(candle.openTime) > lastOpenMs);
+    recovered.forEach((candle) => { persistenceSink.submit(candle); });
     return {
       provider: 'bybit',
       mode: 'rest-gap-recovery',
       symbol,
       timeframe: query.timeframe,
       requestedLimit: limit,
-      candles: candles.filter((candle) => Date.parse(candle.openTime) > lastOpenMs),
+      candles: recovered,
     };
   });
 

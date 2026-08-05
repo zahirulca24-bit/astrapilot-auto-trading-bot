@@ -17,6 +17,10 @@ const config = {
   bybitRestBackoffMs: 250,
   bybitRestMinIntervalMs: 150,
   bybitRestCacheTtlMs: 5000,
+  persistenceTimeoutMs: 2000,
+  persistenceMaxPending: 1000,
+  persistenceMaxRetries: 2,
+  persistenceBackoffMs: 100,
 };
 
 test('ticker contract accepts normalized public data', () => {
