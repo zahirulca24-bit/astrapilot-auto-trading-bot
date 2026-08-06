@@ -13,6 +13,7 @@ type ResearchPageShellProps = {
   panelDescription: string;
   columns: string[];
   footer?: ReactNode;
+  content?: ReactNode;
   emptyTitle?: string;
   emptyDescription?: string;
 };
@@ -26,6 +27,7 @@ export function ResearchPageShell({
   panelDescription,
   columns,
   footer,
+  content,
   emptyTitle = 'No verified records available',
   emptyDescription = 'This screen is connected to the approved workflow, but its backend contract is not connected yet. Records appear only after the relevant service and validated data are available.',
 }: ResearchPageShellProps) {
@@ -55,12 +57,14 @@ export function ResearchPageShell({
           <div className="grid min-w-[760px] bg-slate-950/65 px-4 py-3" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(120px, 1fr))` }}>
             {columns.map((column) => <span key={column} className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{column}</span>)}
           </div>
-          <div className="flex min-h-48 min-w-[760px] items-center justify-center bg-slate-900/45 px-6 py-10 text-center">
-            <div>
-              <p className="text-sm font-medium text-slate-200">{emptyTitle}</p>
-              <p className="mx-auto mt-2 max-w-xl text-xs leading-5 text-slate-400">{emptyDescription}</p>
+          {content ?? (
+            <div className="flex min-h-48 min-w-[760px] items-center justify-center bg-slate-900/45 px-6 py-10 text-center">
+              <div>
+                <p className="text-sm font-medium text-slate-200">{emptyTitle}</p>
+                <p className="mx-auto mt-2 max-w-xl text-xs leading-5 text-slate-400">{emptyDescription}</p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
         {footer ? <div className="mt-4">{footer}</div> : null}
       </section>
@@ -68,7 +72,7 @@ export function ResearchPageShell({
   );
 }
 
-export function FilterButton({ children, primary = false, disabled = true }: { children: ReactNode; primary?: boolean; disabled?: boolean }) {
+export function FilterButton({ children, primary = false, disabled = true, onClick }: { children: ReactNode; primary?: boolean; disabled?: boolean; onClick?: () => void }) {
   const enabledClass = primary
     ? 'bg-blue-500 text-white hover:bg-blue-400'
     : 'border border-slate-700 bg-slate-950/60 text-slate-300 hover:border-slate-600';
@@ -79,6 +83,7 @@ export function FilterButton({ children, primary = false, disabled = true }: { c
       type="button"
       disabled={disabled}
       aria-disabled={disabled}
+      onClick={onClick}
       title={disabled ? 'Unavailable until the required backend contract is connected' : undefined}
       className={`rounded-lg px-3 py-2 text-xs font-semibold ${disabled ? disabledClass : enabledClass}`}
     >
