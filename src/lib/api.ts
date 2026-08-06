@@ -32,6 +32,29 @@ export type MarketUniverse = {
   symbols: Array<string | { symbol?: string; turnover24h?: string | number; lastPrice?: string | number }>;
 };
 
+export type DatasetRecord = {
+  id: number;
+  name: string;
+  source: string;
+  timeframe: string;
+  rowCount: number;
+  symbolCount: number;
+  fingerprint: string;
+  status: string;
+  firstTimestamp: string | null;
+  lastTimestamp: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type DatasetRegistry = { datasets: DatasetRecord[]; count: number };
+
+export type DashboardSummary = {
+  datasets: { approved: number; validatedRows: number };
+  marketData: { activeSymbols: number; lastTickerAt: string | null; lastClosedCandleAt: string | null };
+  simulation: { equity: number | null; drawdown: number | null; openPositions: number | null; recentSignals: unknown[]; available: boolean; reason: string };
+};
+
 async function getJson<T>(baseUrl: string, path: string, signal?: AbortSignal): Promise<T> {
   if (!baseUrl) throw new Error('API base URL is not configured.');
   const response = await fetch(`${baseUrl}${path}`, {
@@ -49,6 +72,8 @@ async function getJson<T>(baseUrl: string, path: string, signal?: AbortSignal): 
 export const api = {
   backendHealth: (signal?: AbortSignal) => getJson<BackendHealth>(backendBaseUrl, '/health', signal),
   backendReadiness: (signal?: AbortSignal) => getJson<Record<string, unknown>>(backendBaseUrl, '/health/ready', signal),
+  datasetRegistry: (signal?: AbortSignal) => getJson<DatasetRegistry>(backendBaseUrl, '/api/datasets', signal),
+  dashboardSummary: (signal?: AbortSignal) => getJson<DashboardSummary>(backendBaseUrl, '/api/dashboard/summary', signal),
   gatewayStatus: (signal?: AbortSignal) => getJson<GatewayStatus>(gatewayBaseUrl, '/status', signal),
   gatewayReadiness: (signal?: AbortSignal) => getJson<Record<string, unknown>>(gatewayBaseUrl, '/health/ready', signal),
   marketUniverse: (signal?: AbortSignal) => getJson<MarketUniverse>(gatewayBaseUrl, '/market-data/universe', signal),
