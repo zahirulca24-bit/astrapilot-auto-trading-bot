@@ -10,6 +10,10 @@ import { StrategyLibraryPage } from '@/pages/StrategyLibraryPage';
 import { BacktestsPage } from '@/pages/BacktestsPage';
 import { SimulatorPage } from '@/pages/SimulatorPage';
 import { SimulatedOrdersPage } from '@/pages/SimulatedOrdersPage';
+import { PortfolioPage } from '@/pages/PortfolioPage';
+import { RiskCenterPage } from '@/pages/RiskCenterPage';
+import { JournalPage } from '@/pages/JournalPage';
+import { AlertsHealthPage } from '@/pages/AlertsHealthPage';
 import { NotImplementedPage } from '@/pages/NotImplementedPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { navGroups } from './nav-config';
@@ -24,6 +28,10 @@ const implementedRoutes: RouteObject[] = [
   { path: 'backtests', element: <BacktestsPage /> },
   { path: 'simulator', element: <SimulatorPage /> },
   { path: 'simulator/orders', element: <SimulatedOrdersPage /> },
+  { path: 'simulator/positions', element: <PortfolioPage /> },
+  { path: 'risk', element: <RiskCenterPage /> },
+  { path: 'journal', element: <JournalPage /> },
+  { path: 'alerts-health', element: <AlertsHealthPage /> },
 ];
 
 const implementedPaths = new Set([
@@ -36,6 +44,10 @@ const implementedPaths = new Set([
   '/app/backtests',
   '/app/simulator',
   '/app/simulator/orders',
+  '/app/simulator/positions',
+  '/app/risk',
+  '/app/journal',
+  '/app/alerts-health',
 ]);
 
 const placeholderRoutes: RouteObject[] = navGroups
