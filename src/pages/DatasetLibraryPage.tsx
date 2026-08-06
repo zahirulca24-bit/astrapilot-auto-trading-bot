@@ -1,45 +1,38 @@
 import { Link } from 'react-router-dom';
 
 import { PageHeader } from '@/components/common/PageHeader';
-import { EmptyState, MetricCard, Surface, SurfaceHeader, controlClass, primaryButton, secondaryButton } from '@/components/common/OperationalPage';
+import { EmptyState, MetricCard, Surface, SurfaceHeader, primaryButton } from '@/components/common/OperationalPage';
 import { useApiResource } from '@/hooks/useApiResource';
 import { api, backendBaseUrl } from '@/lib/api';
 
 export function DatasetLibraryPage() {
-  const backend = useApiResource(api.backendHealth, Boolean(backendBaseUrl));
-  const backendReady = backend.data?.status === 'ok';
+  const registry = useApiResource(api.datasetRegistry, Boolean(backendBaseUrl));
+  const datasets = registry.data?.datasets ?? [];
+  const validatedRows = datasets.reduce((total, dataset) => total + dataset.rowCount, 0);
+  const symbols = datasets.reduce((total, dataset) => total + dataset.symbolCount, 0);
 
   return (
     <>
-      <PageHeader
-        title="Dataset Library"
-        description={backend.state === 'loading' ? 'Checking backend availability…' : backendReady ? 'Backend online. Dataset registry contract is not implemented yet.' : 'Dataset registry unavailable; verified backend status is shown below.'}
-      />
-
+      <PageHeader title="Dataset Library" description="Verified datasets returned by the backend registry." />
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Registered datasets" value="—" detail="Registry endpoint not available" />
-        <MetricCard label="Validated rows" value="—" detail="Awaiting dataset registry API" tone="info" />
-        <MetricCard label="Symbol coverage" value="—" detail="No verified registry response" />
-        <MetricCard label="Backend" value={backend.data?.status ?? (backend.state === 'loading' ? 'Loading' : 'Unavailable')} detail={backend.error ?? backend.data?.service ?? 'Set VITE_BACKEND_API_URL'} tone={backendReady ? 'info' : 'warn'} />
+        <MetricCard label="Registered datasets" value={registry.data ? String(registry.data.count) : '—'} detail={registry.state === 'loading' ? 'Loading registry' : registry.error ?? 'Backend registry'} />
+        <MetricCard label="Validated rows" value={registry.data ? validatedRows.toLocaleString() : '—'} detail="Registry totals" tone="info" />
+        <MetricCard label="Symbol coverage" value={registry.data ? symbols.toLocaleString() : '—'} detail="Declared dataset coverage" />
+        <MetricCard label="Registry" value={registry.state === 'success' ? 'Online' : registry.state === 'loading' ? 'Loading' : 'Unavailable'} detail={registry.error ?? 'Read-only API'} tone={registry.state === 'success' ? 'info' : 'warn'} />
       </div>
 
       <Surface className="mt-4">
-        <SurfaceHeader
-          title="Dataset registry"
-          description="This page only displays records returned by the approved registry API. No sample rows are shown."
-          action={<Link className={primaryButton} to="/app/data/import">Import dataset</Link>}
-        />
-        <div className="flex flex-wrap gap-2 border-b border-slate-800 px-5 py-3">
-          <input disabled className={`${controlClass} min-w-56 flex-1 cursor-not-allowed opacity-60`} placeholder="Search dataset or symbol" aria-label="Search datasets" title="Unavailable until the dataset registry API is connected" />
-          <select disabled className={`${controlClass} cursor-not-allowed opacity-60`} defaultValue="all" aria-label="Filter dataset sources"><option value="all">All sources</option></select>
-          <select disabled className={`${controlClass} cursor-not-allowed opacity-60`} defaultValue="all" aria-label="Filter dataset timeframes"><option value="all">All timeframes</option></select>
-          <button disabled aria-disabled="true" title="Unavailable until the dataset registry API is connected" className={`${secondaryButton} cursor-not-allowed opacity-60`}>Clear filters</button>
-        </div>
-        <EmptyState
-          title={backendReady ? 'Dataset registry endpoint not implemented' : 'Backend unavailable'}
-          description={backend.error ?? 'The FastAPI health endpoint is integrated, but no approved dataset-list endpoint exists yet. The UI remains fail-closed instead of inventing records.'}
-          action={<Link className={primaryButton} to="/app/data/import">Open Dataset Import</Link>}
-        />
+        <SurfaceHeader title="Dataset registry" description="Only persisted registry records are displayed." action={<Link className={primaryButton} to="/app/data/import">Import dataset</Link>} />
+        {datasets.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-xs text-slate-300">
+              <thead className="bg-slate-950/70 text-slate-500"><tr><th className="px-4 py-3">Name</th><th className="px-4 py-3">Source</th><th className="px-4 py-3">Timeframe</th><th className="px-4 py-3">Rows</th><th className="px-4 py-3">Symbols</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Updated</th></tr></thead>
+              <tbody>{datasets.map((dataset) => <tr key={dataset.id} className="border-t border-slate-800"><td className="px-4 py-3 font-medium text-slate-100">{dataset.name}</td><td className="px-4 py-3">{dataset.source}</td><td className="px-4 py-3">{dataset.timeframe}</td><td className="px-4 py-3">{dataset.rowCount.toLocaleString()}</td><td className="px-4 py-3">{dataset.symbolCount}</td><td className="px-4 py-3">{dataset.status}</td><td className="px-4 py-3">{new Date(dataset.updatedAt).toLocaleString()}</td></tr>)}</tbody>
+            </table>
+          </div>
+        ) : (
+          <EmptyState title={registry.state === 'loading' ? 'Loading dataset registry' : 'No datasets registered'} description={registry.error ?? 'Register and approve a validated dataset before it appears here.'} action={<Link className={primaryButton} to="/app/data/import">Open Dataset Import</Link>} />
+        )}
       </Surface>
     </>
   );
