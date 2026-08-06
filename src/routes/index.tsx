@@ -3,6 +3,7 @@ import { Navigate, type RouteObject } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { DatasetLibraryPage } from '@/pages/DatasetLibraryPage';
+import { DatasetImportPage } from '@/pages/DatasetImportPage';
 import { MarketExplorerPage } from '@/pages/MarketExplorerPage';
 import { ScannerPage } from '@/pages/ScannerPage';
 import { SignalQueuePage } from '@/pages/SignalQueuePage';
@@ -14,6 +15,8 @@ import { PortfolioPage } from '@/pages/PortfolioPage';
 import { RiskCenterPage } from '@/pages/RiskCenterPage';
 import { JournalPage } from '@/pages/JournalPage';
 import { AlertsHealthPage } from '@/pages/AlertsHealthPage';
+import { AuditDecisionsPage } from '@/pages/AuditDecisionsPage';
+import { SettingsGovernancePage } from '@/pages/SettingsGovernancePage';
 import { NotImplementedPage } from '@/pages/NotImplementedPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { navGroups } from './nav-config';
@@ -21,6 +24,7 @@ import { navGroups } from './nav-config';
 const implementedRoutes: RouteObject[] = [
   { path: 'dashboard', element: <DashboardPage /> },
   { path: 'data', element: <DatasetLibraryPage /> },
+  { path: 'data/import', element: <DatasetImportPage /> },
   { path: 'markets', element: <MarketExplorerPage /> },
   { path: 'scanner', element: <ScannerPage /> },
   { path: 'signals', element: <SignalQueuePage /> },
@@ -32,11 +36,14 @@ const implementedRoutes: RouteObject[] = [
   { path: 'risk', element: <RiskCenterPage /> },
   { path: 'journal', element: <JournalPage /> },
   { path: 'alerts-health', element: <AlertsHealthPage /> },
+  { path: 'audit-decisions', element: <AuditDecisionsPage /> },
+  { path: 'settings-governance', element: <SettingsGovernancePage /> },
 ];
 
 const implementedPaths = new Set([
   '/app/dashboard',
   '/app/data',
+  '/app/data/import',
   '/app/markets',
   '/app/scanner',
   '/app/signals',
@@ -48,6 +55,8 @@ const implementedPaths = new Set([
   '/app/risk',
   '/app/journal',
   '/app/alerts-health',
+  '/app/audit-decisions',
+  '/app/settings-governance',
 ]);
 
 const placeholderRoutes: RouteObject[] = navGroups
