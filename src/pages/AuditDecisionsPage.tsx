@@ -11,8 +11,7 @@ export function AuditDecisionsPage() {
         { label: 'Open blockers', value: '—', detail: 'Checkpoint evidence not loaded' },
         { label: 'Last lock', value: '—', detail: 'No verified phase-lock record' },
       ]}
-      panelTitle="Governance register"
-      panelDescription="Review decision IDs, change rationale, owner approval, evidence references, affected phase      panelTitle="Decision and audit register"
+      panelTitle="Decision and audit register"
       panelDescription="Track decision IDs, scope, owner, evidence, status, effective date and implementation impact without silently changing approved architecture."
       columns={['Decision ID', 'Category', 'Summary', 'Owner', 'Evidence', 'Status', 'Effective']}
       controls={
