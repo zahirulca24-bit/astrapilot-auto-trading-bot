@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes.health import router as health_router
 from app.api.routes.market_data_ingest import router as market_data_ingest_router
+from app.api.routes.research import router as research_router
 from app.core.config import get_settings
 from app.core.middleware import RequestIdMiddleware
 from app.db.manager import DatabaseManager
@@ -68,6 +69,7 @@ def create_app() -> FastAPI:
     )
     app.include_router(health_router)
     app.include_router(market_data_ingest_router)
+    app.include_router(research_router)
     return app
 
 
