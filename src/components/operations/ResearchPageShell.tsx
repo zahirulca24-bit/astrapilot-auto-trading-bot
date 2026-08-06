@@ -13,9 +13,22 @@ type ResearchPageShellProps = {
   panelDescription: string;
   columns: string[];
   footer?: ReactNode;
+  emptyTitle?: string;
+  emptyDescription?: string;
 };
 
-export function ResearchPageShell({ title, description, metrics, controls, panelTitle, panelDescription, columns, footer }: ResearchPageShellProps) {
+export function ResearchPageShell({
+  title,
+  description,
+  metrics,
+  controls,
+  panelTitle,
+  panelDescription,
+  columns,
+  footer,
+  emptyTitle = 'No verified records available',
+  emptyDescription = 'This screen is connected to the approved workflow, but its backend contract is not connected yet. Records appear only after the relevant service and validated data are available.',
+}: ResearchPageShellProps) {
   return (
     <>
       <PageHeader title={title} description={description} />
@@ -38,14 +51,14 @@ export function ResearchPageShell({ title, description, metrics, controls, panel
           <div className="flex flex-wrap gap-2">{controls}</div>
         </div>
 
-        <div className="mt-4 overflow-hidden rounded-lg border border-slate-800">
+        <div className="mt-4 overflow-x-auto rounded-lg border border-slate-800">
           <div className="grid min-w-[760px] bg-slate-950/65 px-4 py-3" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(120px, 1fr))` }}>
             {columns.map((column) => <span key={column} className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{column}</span>)}
           </div>
-          <div className="flex min-h-48 items-center justify-center bg-slate-900/45 px-6 py-10 text-center">
+          <div className="flex min-h-48 min-w-[760px] items-center justify-center bg-slate-900/45 px-6 py-10 text-center">
             <div>
-              <p className="text-sm font-medium text-slate-200">No verified records available</p>
-              <p className="mx-auto mt-2 max-w-xl text-xs leading-5 text-slate-400">This screen is connected to the approved workflow, but it will not invent market, scanner, strategy or backtest results. Records appear only after the relevant backend service and validated data are available.</p>
+              <p className="text-sm font-medium text-slate-200">{emptyTitle}</p>
+              <p className="mx-auto mt-2 max-w-xl text-xs leading-5 text-slate-400">{emptyDescription}</p>
             </div>
           </div>
         </div>
@@ -55,6 +68,21 @@ export function ResearchPageShell({ title, description, metrics, controls, panel
   );
 }
 
-export function FilterButton({ children, primary = false }: { children: ReactNode; primary?: boolean }) {
-  return <button type="button" className={primary ? 'rounded-lg bg-blue-500 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-400' : 'rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-xs font-medium text-slate-300 hover:border-slate-600'}>{children}</button>;
+export function FilterButton({ children, primary = false, disabled = true }: { children: ReactNode; primary?: boolean; disabled?: boolean }) {
+  const enabledClass = primary
+    ? 'bg-blue-500 text-white hover:bg-blue-400'
+    : 'border border-slate-700 bg-slate-950/60 text-slate-300 hover:border-slate-600';
+  const disabledClass = 'cursor-not-allowed border border-slate-800 bg-slate-950/30 text-slate-600';
+
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      aria-disabled={disabled}
+      title={disabled ? 'Unavailable until the required backend contract is connected' : undefined}
+      className={`rounded-lg px-3 py-2 text-xs font-semibold ${disabled ? disabledClass : enabledClass}`}
+    >
+      {children}
+    </button>
+  );
 }
