@@ -1,10 +1,9 @@
-// Dashboard service.
+// Dashboard legacy detail service.
 //
-// Components depend on this interface, not on the demo adapter.
-// A future implementation can replace `demoAdapter` with REST/SSE calls
-// without touching page components.
+// Real research/market-data aggregates are loaded through src/lib/api.ts.
+// These legacy detail methods intentionally fail closed until approved
+// portfolio, signal, and required-action backend contracts exist.
 
-import { demoAdapter } from '@/adapters/demo-data';
 import type {
   DashboardSummary,
   PortfolioSnapshot,
@@ -20,23 +19,21 @@ export interface DashboardService {
   getRequiredActions(): Promise<RequiredAction[]>;
 }
 
-const latency = (ms = 250) => new Promise((r) => setTimeout(r, ms));
+const unavailable = (contract: string): never => {
+  throw new Error(`${contract} is unavailable until its approved backend contract is implemented.`);
+};
 
 export const dashboardService: DashboardService = {
   async getSummary() {
-    await latency();
-    return demoAdapter.getDashboardSummary();
+    return unavailable('Legacy dashboard KPI summary');
   },
-  async getPortfolio(range) {
-    await latency();
-    return demoAdapter.getPortfolioSnapshot(range);
+  async getPortfolio(_range) {
+    return unavailable('Portfolio/equity history');
   },
   async getRecentSignals() {
-    await latency();
-    return demoAdapter.getRecentSignals();
+    return unavailable('Recent signals');
   },
   async getRequiredActions() {
-    await latency();
-    return demoAdapter.getRequiredActions();
+    return unavailable('Required actions');
   },
 };
